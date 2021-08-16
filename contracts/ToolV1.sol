@@ -26,9 +26,9 @@ contract ToolV1 {
 
     function balanceToken() public view returns (uint){
         
-        console.log("Balance of UNI: ",UNIAddress.balanceOf(address(this)));
-        console.log("Balance of LINK: ",LINKAddress.balanceOf(address(this)));
-        return(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266).balance);
+        console.log("Balance of UNI: ",UNIAddress.balanceOf(msg.sender));
+        console.log("Balance of LINK: ",LINKAddress.balanceOf(msg.sender));
+        return(address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).balance);
     }
 
     function swapForPercentage(uint[] memory percentage) public payable {
@@ -43,8 +43,8 @@ contract ToolV1 {
         console.log(balance);
         console.log((balance*percentage[0])/100);
         console.log((balance*(100 - percentage[0]))/100);
-        uniswapRouter.swapExactETHForTokens{ value: ((balance*percentage[0])/100) }(0, getPath(UNI), address(this), deadline);
-        uniswapRouter.swapExactETHForTokens{ value: ((balance*(100 - percentage[0]))/100) }(0, getPath(LINK), address(this), deadline);
+        uniswapRouter.swapExactETHForTokens{ value: ((balance*percentage[0])/100) }(0, getPath(UNI), address(msg.sender), deadline);
+        uniswapRouter.swapExactETHForTokens{ value: ((balance*(100 - percentage[0]))/100) }(0, getPath(LINK), address(msg.sender), deadline);
         sendFee(fee);
     }
 
@@ -59,6 +59,6 @@ contract ToolV1 {
     function sendFee(uint _fee) public payable {
         // Call returns a boolean value indicating success or failure.
         // This is the current recommended method to use.
-        (bool sent,) = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266).call{value: _fee}("");
+        (bool sent,) = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).call{value: _fee}("");
     }
 }

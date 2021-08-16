@@ -14,7 +14,7 @@ describe('ToolV1', function () {
     const Tx = await ToolV1.swapForPercentage([70],{value:ethers.utils.parseEther("1")});
     await Tx.wait();
     console.log((await ToolV1.balanceToken()).toString()/(1*10**18));
-   
+    //console.log((await ToolV1.balanceToken()).toString());
     // Test if the returned value is the same one
     // Note that we need to use strings to compare the 256 bit integers
     //expect(await ToolV1.printWETHAddress()).to.equal('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
