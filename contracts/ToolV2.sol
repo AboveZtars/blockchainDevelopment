@@ -28,16 +28,19 @@ contract ToolV2 {
     address internal constant  RSR  = 0x8762db106B2c2A0bccB3A80d1Ed41273552616E8;
     address internal constant STRONG= 0x990f341946A3fdB507aE7e52d17851B87168017c;
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal constant  KCS  = 0xf34960d9d60be18cC1D5Afc1A6F012A723a28811;
 
 
     function balanceToken() public view returns (uint){
         
-        console.log("Balance of UNI: ",UNIAddress.balanceOf(msg.sender));
-        console.log("Balance of LINK: ",LINKAddress.balanceOf(msg.sender));
+        console.log("Balance of UNI of the msg.sender: ",UNIAddress.balanceOf(msg.sender));
+        console.log("Balance of LINK of the msg,sender: ",LINKAddress.balanceOf(msg.sender));
         return(address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).balance);
     }
 
     function swapForPercentage(uint[] memory percentage) public payable {
+        require(msg.value > 0, "Must pass non 0 ETH amount");
+        require(percentage[0] >= 0, "Must be 0 or greater");
         uint deadline = block.timestamp + 30; // using 'now' for convenience
         uint time;
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
@@ -45,9 +48,9 @@ contract ToolV2 {
         uint balance = msg.value;
         uint fee = (msg.value)/1000;
         balance = balance - fee;
-        console.log(balance);
-        console.log((balance*percentage[0])/100);
-        console.log((balance*(100 - percentage[0]))/100);
+        console.log("Balance of the Tx after substract the fee: ",balance);
+        console.log("Amount in eth Wei of the First Token: ",(balance*percentage[0])/100);
+        console.log("Amount in eth Wei of the Second Token: ",(balance*(100 - percentage[0]))/100);
         uniswapRouterV2.swapExactETHForTokens{ value: ((balance*percentage[0])/100) }(0, getPath(UNI), address(msg.sender), deadline);
         uniswapRouterV2.swapExactETHForTokens{ value: ((balance*(100 - percentage[0]))/100) }(0, getPath(LINK), address(msg.sender), deadline);
         sendFee(fee);
@@ -63,16 +66,16 @@ contract ToolV2 {
 
     function swapForPercentageV2(uint[] memory percentage) external payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
+        require(percentage[0] >= 0, "Must be 0 or greater");
         uint time;
-        
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
         time = block.timestamp;
         uint balance = msg.value;
         uint dexFee = (msg.value)/1000;
         balance = balance - dexFee;
-        console.log(balance);
-        console.log((balance*percentage[0])/100);
-        console.log((balance*(100 - percentage[0]))/100);
+        console.log("Balance of the Tx after substract the fee: ",balance);
+        console.log("Amount in Wei of the First Token: ",(balance*percentage[0])/100);
+        console.log("Amount in Wei of the Second Token: ",(balance*(100 - percentage[0]))/100);
         
         ISwapRouter.ExactInputSingleParams memory params1 =
             ISwapRouter.ExactInputSingleParams({
@@ -104,11 +107,6 @@ contract ToolV2 {
 
         sendFee(dexFee);
 
-        /* IUniswapV3Router03.refundETH();
-        
-        // refund leftover ETH to user
-        (bool success,) = msg.sender.call{ value: address(this).balance }("");
-        require(success, "refund failed"); */
   }
 
     function sendFee(uint _fee) public payable {
