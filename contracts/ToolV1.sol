@@ -32,6 +32,8 @@ contract ToolV1 {
     }
 
     function swapForPercentage(uint[] memory percentage) public payable {
+        require(msg.value > 0, "Must pass non 0 ETH amount");
+        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater");
         uint deadline = block.timestamp + 30; // using 'now' for convenience, for mainnet pass deadline from frontend!
         uint time;
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
@@ -42,9 +44,13 @@ contract ToolV1 {
         console.log(balance);
         console.log((balance*percentage[0])/100);
         console.log((balance*(100 - percentage[0]))/100);
-        uniswapRouterV2.swapExactETHForTokens{ value: ((balance*percentage[0])/100) }(0, getPath(UNI), address(msg.sender), deadline);
-        uniswapRouterV2.swapExactETHForTokens{ value: ((balance*(100 - percentage[0]))/100) }(0, getPath(LINK), address(msg.sender), deadline);
+        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
+        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
         sendFee(fee);
+    }
+
+    function swapUNIV2(uint valueForTx, address[] memory path, uint deadline ) private {
+        uniswapRouterV2.swapExactETHForTokens{ value: valueForTx }(0, path, address(msg.sender), deadline);
     }
 
     function getPath(address _tokenAddress) private pure returns (address[] memory) {

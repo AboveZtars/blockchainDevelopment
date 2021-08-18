@@ -51,9 +51,13 @@ contract ToolV2 {
         console.log("Balance of the Tx after substract the fee: ",balance);
         console.log("Amount in eth Wei of the First Token: ",(balance*percentage[0])/100);
         console.log("Amount in eth Wei of the Second Token: ",(balance*(100 - percentage[0]))/100);
-        uniswapRouterV2.swapExactETHForTokens{ value: ((balance*percentage[0])/100) }(0, getPath(UNI), address(msg.sender), deadline);
-        uniswapRouterV2.swapExactETHForTokens{ value: ((balance*(100 - percentage[0]))/100) }(0, getPath(LINK), address(msg.sender), deadline);
+        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
+        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
         sendFee(fee);
+    }
+
+    function swapUNIV2(uint valueForTx, address[] memory path, uint deadline ) private {
+        uniswapRouterV2.swapExactETHForTokens{ value: valueForTx }(0, path, address(msg.sender), deadline);
     }
 
     function getPath(address _tokenAddress) private pure returns (address[] memory) {
@@ -66,7 +70,7 @@ contract ToolV2 {
 
     function swapForPercentageV2(uint[] memory percentage) external payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
-        require(percentage[0] >= 0, "Must be 0 or greater");
+        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater");
         uint time;
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
         time = block.timestamp;
@@ -89,7 +93,7 @@ contract ToolV2 {
                 sqrtPriceLimitX96: 0
             });
 
-        uniswapRouterV3.exactInputSingle{ value: (balance*percentage[0])/100 }(params1);
+        swapUNIV3((balance*percentage[0])/100, params1);
 
         ISwapRouter.ExactInputSingleParams memory params2 =
             ISwapRouter.ExactInputSingleParams({
@@ -102,12 +106,13 @@ contract ToolV2 {
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
-
-        uniswapRouterV3.exactInputSingle{ value: (balance*(100 - percentage[0]))/100 }(params2);
-
+        swapUNIV3((balance*(100 - percentage[0]))/100, params2);
         sendFee(dexFee);
+    }
 
-  }
+    function swapUNIV3(uint valueForTx, ISwapRouter.ExactInputSingleParams memory params) private {
+        uniswapRouterV3.exactInputSingle{ value: valueForTx}(params);
+    }
 
     function sendFee(uint _fee) public payable {
         // Call returns a boolean value indicating success or failure.

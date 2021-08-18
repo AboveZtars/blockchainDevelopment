@@ -3,41 +3,53 @@
 const { expect } = require('chai');
 const axios = require('axios');  
 // Hardcoded Token Address for testing
-/* const WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-const  KCS  = 0xf34960d9d60be18cC1D5Afc1A6F012A723a28811; */ //USE THIS FOR TESTING UNISWAP V3 IN 0X API
+const WETH9 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+const  DAI  = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+const  USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const  USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const  UNI  = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
+const  LINK = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
+const  BUSD = "0x4Fabb145d64652a948d72533023f6E7A623C7C53";
+const SUSHI = "0x6B3595068778DD592e39A122f4f5a5cF09C90fE2";
+const  BAT  = "0x0D8775F648430679A709E98d2b0Cb6250d2887EF";
+const  RSR  = "0x8762db106B2c2A0bccB3A80d1Ed41273552616E8";
+const STRONG= "0x990f341946A3fdB507aE7e52d17851B87168017c";
+const  BNT  = "0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C";
+const  RSV  = "0x196f4727526eA7FB1e17b2071B3d8eAA38486988";
+
+//Url for get the best Routes to make a swap
+const urlFirstToken = "https://api.0x.org/swap/v1/quote?buyToken="+RSV+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V3,Uniswap_V2";
+const urlSecondToken = "https://api.0x.org/swap/v1/quote?buyToken="+DAI+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V2,Uniswap_V3";
+
+async function getSource(Token) {
+    try {
+        const response = await axios.get(Token);
+        return response;
+    } catch (error) {
+        console.error(error);
+    }
+  }
 
 
 // Start test block
-describe('ToolV2 (proxy)', function () {
-
-    //API FOR SELECTING THE BEST DEX (NOT WORKING), BUT IT DOES GET DATA FROM 0X API
-    //AND GET THE PROPORTIONS FOR UNISWAP_V2 AND UNISWAP_V3. 
-    //KCS IT'S ONE OF THE FEW TOKENS WITH BETTER PROPORTIONS IN UNISWAP_V3 
-    /* axios.get('https://api.0x.org/swap/v1/quote?buyToken='+WETH9+'&sellToken='+KCS+'&sellAmount=1000000000000000000&excludedSources=0x,Kyber,Uniswap,Eth2Dai,Curve,Balancer,Balancer_V2,Bancor,mStable,Mooniswap,Swerve,SnowSwap,SushiSwap,Shell,MultiHop,DODO,DODO_V2,CREAM,LiquidityProvider,CryptoCom,Linkswap,Lido,MakerPsm,KyberDMM,Smoothy,Component,Saddle,xSigma,Curve_V2,ShibaSwap,Clipperer?ID=12345')
-    .then(response => {
-        // handle success
-        //console.log(response.data.sources[2]);
-        const uniV2 = response.data.sources[2].proportion;
-        //console.log(response.data.sources[29]);
-        const uniV3 = response.data.sources[29].proportion;
-        return [uniV2,uniV3]
-    }).catch(function (error) {
-        // handle error
-        console.log("dio error");
-    }) */
+describe('ToolV2 (proxy)',function () {
     
     // Test case
-        it('Checking transaction', async function () {
-            const ToolV1Factory = await ethers.getContractFactory("ToolV1");
-            const ToolV2Factory = await ethers.getContractFactory("ToolV2");
-            const ToolV1 = await upgrades.deployProxy(ToolV1Factory, [], {initializer: false});
-            const ToolV2 = await upgrades.upgradeProxy(ToolV1.address, ToolV2Factory);
-            // Swap Transaction    ARRAY PASS THE DESIRE PERCENTAGE OF THE FIRST TOKEN, THE PERCENTAGE OF THE SECOND TOKEN IS CALCULATED BY THE SMART CONTRACT
-            const Tx = await ToolV2.swapForPercentageV2([70],{value:ethers.utils.parseEther("1")});
-            await Tx.wait();
-            // Showing account balance
-            console.log("Ether sent to the Recipient:"+((await ToolV2.balanceToken()).toString())/(1*10**18));
+    it('Checking transaction', async function () {
+        const ToolV1Factory = await ethers.getContractFactory("ToolV1");
+        const ToolV2Factory = await ethers.getContractFactory("ToolV2");
+        const ToolV1 = await upgrades.deployProxy(ToolV1Factory, [], {initializer: false});
+        const ToolV2 = await upgrades.upgradeProxy(ToolV1.address, ToolV2Factory);
+        const source1 = await getSource(urlFirstToken).then(res => res.data.orders[0].source);
+        const source2 = await getSource(urlSecondToken).then(res => res.data.orders[0].source);
+        console.log("Source for First Token: " + source1);
+        console.log("Source for Second Token: " + source2);
+        // Swap Transaction    ARRAY PASS THE DESIRE PERCENTAGE OF THE FIRST TOKEN, THE PERCENTAGE OF THE SECOND TOKEN IS CALCULATED BY THE SMART CONTRACT
+        const Tx = await ToolV2.swapForPercentageV2([50],{value:ethers.utils.parseEther("1")});
+        await Tx.wait();
+        // Showing account balance
+        console.log("Ether sent to the Recipient:"+((await ToolV2.balanceToken()).toString())/(1*10**18));
 
-        }).timeout(50000);
+    }).timeout(50000);
     
 });
