@@ -45,7 +45,7 @@ describe('ToolV2 (proxy)',function () {
         console.log("Source for First Token: " + source1);
         console.log("Source for Second Token: " + source2);
         // Swap Transaction    ARRAY PASS THE DESIRE PERCENTAGE OF THE FIRST TOKEN, THE PERCENTAGE OF THE SECOND TOKEN IS CALCULATED BY THE SMART CONTRACT
-        const Tx = await ToolV2.swapForPercentageV2([50],{value:ethers.utils.parseEther("1")});
+        const Tx = await ToolV2.swapForPercentageV2([50],source1,{value:ethers.utils.parseEther("1")});
         await Tx.wait();
         // Showing account balance
         console.log("Ether sent to the Recipient:"+((await ToolV2.balanceToken()).toString())/(1*10**18));

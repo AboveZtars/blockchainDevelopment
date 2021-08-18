@@ -12,8 +12,6 @@ contract ToolV2 {
     IUniswapV2Router02 public constant uniswapRouterV2 = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     ISwapRouter public constant uniswapRouterV3 = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     
-    
-
     //Hardcoded Tokens for testing purposes
     IERC20 private constant UNIAddress = IERC20(UNI);
     IERC20 private constant LINKAddress = IERC20(LINK);
@@ -29,6 +27,9 @@ contract ToolV2 {
     address internal constant STRONG= 0x990f341946A3fdB507aE7e52d17851B87168017c;
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address internal constant  KCS  = 0xf34960d9d60be18cC1D5Afc1A6F012A723a28811;
+
+    string constant UNISWAP_V3 = "Uniswap_V3";
+    string constant UNISWAP_V2 = "Uniswap_V2";
 
 
     function balanceToken() public view returns (uint){
@@ -68,10 +69,11 @@ contract ToolV2 {
         return path;
     }
 
-    function swapForPercentageV2(uint[] memory percentage) external payable {
+    function swapForPercentageV2(uint[] memory percentage,string memory protocol) external payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
         require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater");
         uint time;
+        uint deadline = block.timestamp + 30;
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
         time = block.timestamp;
         uint balance = msg.value;
@@ -93,8 +95,6 @@ contract ToolV2 {
                 sqrtPriceLimitX96: 0
             });
 
-        swapUNIV3((balance*percentage[0])/100, params1);
-
         ISwapRouter.ExactInputSingleParams memory params2 =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: WETH9,
@@ -106,8 +106,16 @@ contract ToolV2 {
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
-        swapUNIV3((balance*(100 - percentage[0]))/100, params2);
-        sendFee(dexFee);
+        
+        if (keccak256(abi.encodePacked((protocol))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
+            swapUNIV3((balance*percentage[0])/100, params1);
+            swapUNIV3((balance*(100 - percentage[0]))/100, params2);
+            sendFee(dexFee);
+        } else if (keccak256(abi.encodePacked((protocol))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
+            swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
+            swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
+            sendFee(dexFee);
+        }
     }
 
     function swapUNIV3(uint valueForTx, ISwapRouter.ExactInputSingleParams memory params) private {
