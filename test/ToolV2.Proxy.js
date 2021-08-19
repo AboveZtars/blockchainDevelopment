@@ -2,7 +2,7 @@
 // Load dependencies
 const { expect } = require('chai');
 const axios = require('axios');  
-// Hardcoded Token Address for testing
+// Hardcoded Token Address for testing in API
 const WETH9 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const  DAI  = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const  USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
@@ -18,9 +18,11 @@ const  BNT  = "0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C";
 const  RSV  = "0x196f4727526eA7FB1e17b2071B3d8eAA38486988";
 
 //Url for get the best Routes to make a swap
-const urlFirstToken = "https://api.0x.org/swap/v1/quote?buyToken="+RSV+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V3,Uniswap_V2";
-const urlSecondToken = "https://api.0x.org/swap/v1/quote?buyToken="+DAI+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V2,Uniswap_V3";
+//Hardcode the address for testing, notice you have to change this ones for ToolV1 or ToolV2 as well
+const urlFirstToken = "https://api.0x.org/swap/v1/quote?buyToken="+UNI+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V3,Uniswap_V2";
+const urlSecondToken = "https://api.0x.org/swap/v1/quote?buyToken="+LINK+"&sellToken="+WETH9+"&sellAmount=1000000000000000000&includedSources=Uniswap_V2,Uniswap_V3";
 
+//API call
 async function getSource(Token) {
     try {
         const response = await axios.get(Token);
@@ -36,6 +38,7 @@ describe('ToolV2 (proxy)',function () {
     
     // Test case
     it('Checking transaction', async function () {
+        //Upgradeable contract Testing for ToolV1 --> ToolV2
         const ToolV1Factory = await ethers.getContractFactory("ToolV1");
         const ToolV2Factory = await ethers.getContractFactory("ToolV2");
         const ToolV1 = await upgrades.deployProxy(ToolV1Factory, [], {initializer: false});
@@ -45,10 +48,11 @@ describe('ToolV2 (proxy)',function () {
         console.log("Source for First Token: " + source1);
         console.log("Source for Second Token: " + source2);
         // Swap Transaction    ARRAY PASS THE DESIRE PERCENTAGE OF THE FIRST TOKEN, THE PERCENTAGE OF THE SECOND TOKEN IS CALCULATED BY THE SMART CONTRACT
-        const Tx = await ToolV2.swapForPercentageV2([50],source1,{value:ethers.utils.parseEther("1")});
+        //source1 its for the first token -> urlFirstToken. source2 its for the second token -> urlSecondToken
+        const Tx = await ToolV2.swapForPercentageV2([50],source1,source2,{value:ethers.utils.parseEther("1")});
         await Tx.wait();
         // Showing account balance
-        console.log("Ether sent to the Recipient:"+((await ToolV2.balanceToken()).toString())/(1*10**18));
+        console.log("Recipient after sending the fee: "+((await ToolV2.balanceToken()).toString())/(1*10**18));
 
     }).timeout(50000);
     

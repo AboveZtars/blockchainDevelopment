@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+// IF YOU WANT TO TEST THE BEHAVIOR WITH DIFFERENT TOKENS MAKE SURE TO CHANGE ALL THE VARIABLES AT THE SWAPS FUNCTIONS--
+// -- WITH THE CORRESPONDING TOKEN FOR TESTING. 
+// THE SELECTION OF A TOKEN MUST BE DONE IN THE FRONTEND.
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "hardhat/console.sol";
@@ -33,10 +36,10 @@ contract ToolV1 {
 
     function swapForPercentage(uint[] memory percentage) public payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
-        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater");
-        uint deadline = block.timestamp + 30; // using 'now' for convenience, for mainnet pass deadline from frontend!
+        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater"); //overflow - underflow guard
+        uint deadline = block.timestamp + 30; 
         uint time;
-        require(block.timestamp > time + 5, "Simple Reentrancy Guard");
+        require(block.timestamp > time + 5, "Simple Reentrancy Guard"); // Simple reentrancy guard
         time = block.timestamp;
         uint balance = msg.value;
         uint fee = (msg.value)/1000;
@@ -44,15 +47,15 @@ contract ToolV1 {
         console.log(balance);
         console.log((balance*percentage[0])/100);
         console.log((balance*(100 - percentage[0]))/100);
-        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
-        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
+        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline); // change UNI for testing
+        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline); // change LINK for testing
         sendFee(fee);
     }
-
+    //swap of uniswap v2
     function swapUNIV2(uint valueForTx, address[] memory path, uint deadline ) private {
         uniswapRouterV2.swapExactETHForTokens{ value: valueForTx }(0, path, address(msg.sender), deadline);
     }
-
+    //calculate the path for uniswap v2
     function getPath(address _tokenAddress) private pure returns (address[] memory) {
     address[] memory path = new address[](2);
     path[0] = uniswapRouterV2.WETH();

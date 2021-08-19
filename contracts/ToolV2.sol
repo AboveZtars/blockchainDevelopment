@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-pragma abicoder v2; //for using abicoder
+// IF YOU WANT TO TEST THE BEHAVIOR WITH DIFFERENT TOKENS MAKE SURE TO CHANGE ALL THE VARIABLES AT THE SWAPS FUNCTIONS--
+// -- WITH THE CORRESPONDING TOKEN FOR TESTING. 
+// THE SELECTION OF A TOKEN MUST BE DONE IN THE FRONTEND.
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
@@ -31,20 +33,19 @@ contract ToolV2 {
     string constant UNISWAP_V3 = "Uniswap_V3";
     string constant UNISWAP_V2 = "Uniswap_V2";
 
-
-    function balanceToken() public view returns (uint){
-        
+    //Function to see the balance of the other tokens for the msg.sender and the balance of the fee recipient
+    function balanceToken() public view returns (uint){ 
         console.log("Balance of UNI of the msg.sender: ",UNIAddress.balanceOf(msg.sender));
         console.log("Balance of LINK of the msg,sender: ",LINKAddress.balanceOf(msg.sender));
         return(address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).balance);
     }
-
+    //ToolV1 function
     function swapForPercentage(uint[] memory percentage) public payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
-        require(percentage[0] >= 0, "Must be 0 or greater");
-        uint deadline = block.timestamp + 30; // using 'now' for convenience
+        require(percentage[0] >= 0 && percentage[0] <= 100, "Must be 0 or greater"); //overflow - underflow guard
+        uint deadline = block.timestamp + 30; 
         uint time;
-        require(block.timestamp > time + 5, "Simple Reentrancy Guard");
+        require(block.timestamp > time + 5, "Simple Reentrancy Guard"); // Simple reentrancy guard
         time = block.timestamp;
         uint balance = msg.value;
         uint fee = (msg.value)/1000;
@@ -52,15 +53,15 @@ contract ToolV2 {
         console.log("Balance of the Tx after substract the fee: ",balance);
         console.log("Amount in eth Wei of the First Token: ",(balance*percentage[0])/100);
         console.log("Amount in eth Wei of the Second Token: ",(balance*(100 - percentage[0]))/100);
-        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
-        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
+        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline); // change UNI for testing
+        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline); // change LINK for testing
         sendFee(fee);
     }
-
+    //swap of uniswap v2
     function swapUNIV2(uint valueForTx, address[] memory path, uint deadline ) private {
         uniswapRouterV2.swapExactETHForTokens{ value: valueForTx }(0, path, address(msg.sender), deadline);
     }
-
+    //calculate the path for uniswap v2
     function getPath(address _tokenAddress) private pure returns (address[] memory) {
         address[] memory path = new address[](2);
         path[0] = uniswapRouterV2.WETH();
@@ -68,10 +69,10 @@ contract ToolV2 {
         
         return path;
     }
-
-    function swapForPercentageV2(uint[] memory percentage,string memory protocol) external payable {
+    //ToolV2 function
+    function swapForPercentageV2(uint[] memory percentage,string memory protocol1,string memory protocol2) external payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
-        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater");
+        require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater"); // overflow - underflow guard
         uint time;
         uint deadline = block.timestamp + 30;
         require(block.timestamp > time + 5, "Simple Reentrancy Guard");
@@ -86,7 +87,7 @@ contract ToolV2 {
         ISwapRouter.ExactInputSingleParams memory params1 =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: WETH9,
-                tokenOut: UNI,
+                tokenOut: UNI, // change this one for testing 
                 fee: 3000,
                 recipient: msg.sender,
                 deadline: block.timestamp + 15,
@@ -98,7 +99,7 @@ contract ToolV2 {
         ISwapRouter.ExactInputSingleParams memory params2 =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: WETH9,
-                tokenOut: LINK,
+                tokenOut: LINK, // change this one for testing
                 fee: 3000,
                 recipient: msg.sender,
                 deadline: block.timestamp + 15,
@@ -106,16 +107,23 @@ contract ToolV2 {
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
-        
-        if (keccak256(abi.encodePacked((protocol))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
+        //UNISWAP V3 protocols
+        if (keccak256(abi.encodePacked((protocol1))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
             swapUNIV3((balance*percentage[0])/100, params1);
+        }
+        if (keccak256(abi.encodePacked((protocol2))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
             swapUNIV3((balance*(100 - percentage[0]))/100, params2);
             sendFee(dexFee);
-        } else if (keccak256(abi.encodePacked((protocol))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
+        }
+        //UNISWAP V2 protocols
+        if (keccak256(abi.encodePacked((protocol1))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
             swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
+        }
+        if (keccak256(abi.encodePacked((protocol2))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
             swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
             sendFee(dexFee);
         }
+        
     }
 
     function swapUNIV3(uint valueForTx, ISwapRouter.ExactInputSingleParams memory params) private {
