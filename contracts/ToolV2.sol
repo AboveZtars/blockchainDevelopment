@@ -1,46 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-// IF YOU WANT TO TEST THE BEHAVIOR WITH DIFFERENT TOKENS MAKE SURE TO CHANGE ALL THE VARIABLES AT THE SWAPS FUNCTIONS--
-// -- WITH THE CORRESPONDING TOKEN FOR TESTING. 
-// THE SELECTION OF A TOKEN MUST BE DONE IN THE FRONTEND.
+// THE SELECTION OF A TOKEN AND THE PERCENTAGE MUST BE DONE IN THE FRONTEND OR TESTING SCRIPT
 
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 import "hardhat/console.sol";
-//IERC20 for testing Purposes
+//IERC20 for testing Purposes, know the balances of the tokens 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ToolV2 {
     IUniswapV2Router02 public constant uniswapRouterV2 = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
     ISwapRouter public constant uniswapRouterV3 = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     
-    //Hardcoded Tokens for testing purposes
-    IERC20 private constant UNIAddress = IERC20(UNI);
-    IERC20 private constant LINKAddress = IERC20(LINK);
-    address internal constant  USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-    address internal constant  USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address internal constant  UNI  = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address internal constant  LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
-    address internal constant  BUSD = 0x4Fabb145d64652a948d72533023f6E7A623C7C53;
-    address internal constant  DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address internal constant SUSHI = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2;
-    address internal constant  BAT  = 0x0D8775F648430679A709E98d2b0Cb6250d2887EF;
-    address internal constant  RSR  = 0x8762db106B2c2A0bccB3A80d1Ed41273552616E8;
-    address internal constant STRONG= 0x990f341946A3fdB507aE7e52d17851B87168017c;
+    //WETH TOKEN ADDRESS
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address internal constant  KCS  = 0xf34960d9d60be18cC1D5Afc1A6F012A723a28811;
-
-    string constant UNISWAP_V3 = "Uniswap_V3";
-    string constant UNISWAP_V2 = "Uniswap_V2";
 
     //Function to see the balance of the other tokens for the msg.sender and the balance of the fee recipient
-    function balanceToken() public view returns (uint){ 
-        console.log("Balance of UNI of the msg.sender: ",UNIAddress.balanceOf(msg.sender));
-        console.log("Balance of LINK of the msg,sender: ",LINKAddress.balanceOf(msg.sender));
+    function balanceToken(address[] memory tokenAddress) public view returns (uint){ 
+        IERC20 tokenizedAddress1 = IERC20(tokenAddress[0]);
+        IERC20 tokenizedAddress2 = IERC20(tokenAddress[1]);
+        console.log("Balance of Token 1 of the msg.sender: ",tokenizedAddress1.balanceOf(msg.sender));
+        console.log("Balance of Token 2 of the msg,sender: ",tokenizedAddress2.balanceOf(msg.sender));
         return(address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).balance);
     }
     //ToolV1 function
-    function swapForPercentage(uint[] memory percentage) public payable {
+    function swapForPercentage(uint[] memory percentage,address[] memory tokenAddress) public payable {
         require(msg.value > 0, "Must pass non 0 ETH amount");
         require(percentage[0] >= 0 && percentage[0] <= 100, "Must be 0 or greater"); //overflow - underflow guard
         uint deadline = block.timestamp + 30; 
@@ -53,8 +37,8 @@ contract ToolV2 {
         console.log("Balance of the Tx after substract the fee: ",balance);
         console.log("Amount in eth Wei of the First Token: ",(balance*percentage[0])/100);
         console.log("Amount in eth Wei of the Second Token: ",(balance*(100 - percentage[0]))/100);
-        swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline); // change UNI for testing
-        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline); // change LINK for testing
+        swapUNIV2((balance*percentage[0])/100, getPath(tokenAddress[0]), deadline); // change UNI for testing
+        swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(tokenAddress[1]), deadline); // change LINK for testing
         sendFee(fee);
     }
     //swap of uniswap v2
@@ -70,7 +54,9 @@ contract ToolV2 {
         return path;
     }
     //ToolV2 function
-    function swapForPercentageV2(uint[] memory percentage,string memory protocol1,string memory protocol2) external payable {
+    function swapForPercentageV2(uint[] memory percentage,address[] memory tokenAddress,string[] memory protocol) external payable {
+        string memory UNISWAP_V3 = "Uniswap_V3";
+        string memory UNISWAP_V2 = "Uniswap_V2";
         require(msg.value > 0, "Must pass non 0 ETH amount");
         require(percentage[0] >= 0 && percentage[0] <=100 , "Must be 0 or greater"); // overflow - underflow guard
         uint time;
@@ -87,7 +73,7 @@ contract ToolV2 {
         ISwapRouter.ExactInputSingleParams memory params1 =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: WETH9,
-                tokenOut: UNI, // change this one for testing 
+                tokenOut: tokenAddress[0], // change this one for testing 
                 fee: 3000,
                 recipient: msg.sender,
                 deadline: block.timestamp + 15,
@@ -99,7 +85,7 @@ contract ToolV2 {
         ISwapRouter.ExactInputSingleParams memory params2 =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: WETH9,
-                tokenOut: LINK, // change this one for testing
+                tokenOut: tokenAddress[1], // change this one for testing
                 fee: 3000,
                 recipient: msg.sender,
                 deadline: block.timestamp + 15,
@@ -108,19 +94,19 @@ contract ToolV2 {
                 sqrtPriceLimitX96: 0
             });
         //UNISWAP V3 protocols
-        if (keccak256(abi.encodePacked((protocol1))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
+        if (keccak256(abi.encodePacked((protocol[0]))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
             swapUNIV3((balance*percentage[0])/100, params1);
         }
-        if (keccak256(abi.encodePacked((protocol2))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
+        if (keccak256(abi.encodePacked((protocol[1]))) == keccak256(abi.encodePacked((UNISWAP_V3)))){
             swapUNIV3((balance*(100 - percentage[0]))/100, params2);
             sendFee(dexFee);
         }
         //UNISWAP V2 protocols
-        if (keccak256(abi.encodePacked((protocol1))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
-            swapUNIV2((balance*percentage[0])/100, getPath(UNI), deadline);
+        if (keccak256(abi.encodePacked((protocol[0]))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
+            swapUNIV2((balance*percentage[0])/100, getPath(tokenAddress[0]), deadline);
         }
-        if (keccak256(abi.encodePacked((protocol2))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
-            swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(LINK), deadline);
+        if (keccak256(abi.encodePacked((protocol[1]))) == keccak256(abi.encodePacked((UNISWAP_V2)))){
+            swapUNIV2(((balance*(100 - percentage[0]))/100), getPath(tokenAddress[1]), deadline);
             sendFee(dexFee);
         }
         
@@ -135,5 +121,6 @@ contract ToolV2 {
         // This is the current recommended method to use.
         // 2nd address of Hardhat node
         (bool sent,) = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8).call{value: _fee}("");
+        
     }
 }
