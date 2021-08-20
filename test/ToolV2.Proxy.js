@@ -1,4 +1,7 @@
 // test/ToolV1Test.js
+
+//API 0x NEED A VPN IF YOU ARE IN VENEZUELA  
+
 // Load dependencies
 const { expect } = require('chai');
 const axios = require('axios');  
