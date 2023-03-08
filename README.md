@@ -1,6 +1,6 @@
-# SWAPPER ASSIGNMENT
+# SWAPPER
 
-This is the First Assignment for the EYSS academy.
+Swap contract, with this contract and forking the mainnet we can use uniswap to get multiple tokens for testing purposes
 
 
 # Testing parameters
